@@ -4,7 +4,7 @@ Rails.application.routes.draw do
   # which contract the client is holding.
   namespace :api do
     namespace :v1 do
-      resources :employees, only: [ :index ]
+      resources :employees, only: [ :index, :show ]
     end
   end
 
