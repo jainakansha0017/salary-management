@@ -4,7 +4,11 @@ Rails.application.routes.draw do
   # which contract the client is holding.
   namespace :api do
     namespace :v1 do
-      resources :employees, only: [ :index, :show ]
+      resources :employees, only: [ :index, :show ] do
+        # Nested and create-only: a pay change belongs to one person, and the
+        # history is append-only, so there is nothing to update or delete.
+        resources :salary_changes, only: [ :create ]
+      end
     end
   end
 
