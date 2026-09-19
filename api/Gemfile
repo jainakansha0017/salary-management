@@ -19,10 +19,6 @@ group :development, :test do
   gem "debug", platforms: %i[mri mswin mswin64 mingw x64_mingw]
   gem "rspec-rails", "~> 6.1"
   gem "factory_bot_rails", "~> 6.4"
-
-  # Seeds and specs need plausible names and job titles; pinned to a fixed
-  # seed at the point of use so generated data stays reproducible.
-  gem "faker", "~> 3.2"
 end
 
 group :development do
