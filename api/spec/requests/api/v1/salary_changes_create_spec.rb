@@ -70,6 +70,19 @@ RSpec.describe "POST /api/v1/employees/:employee_id/salary_changes" do
       expect(body["error"]["details"]["effective_from"].first).to include("must take effect after")
     end
 
+    # The race itself is covered against a real database in
+    # spec/integration/concurrent_salary_changes_spec.rb. This checks only that
+    # losing it is reported as a conflict rather than as bad input.
+    it "answers 409 when another change landed first" do
+      allow(RecordSalaryChange).to receive(:call)
+        .and_raise(RecordSalaryChange::ConcurrentChange, "reload and try again")
+
+      post_change
+
+      expect(response).to have_http_status(:conflict)
+      expect(body["error"]).to include("code" => "conflict", "message" => "reload and try again")
+    end
+
     it "answers with JSON when the employee does not exist" do
       post "/api/v1/employees/0/salary_changes", params: { salary_change: { amount_minor: 1 } }
 

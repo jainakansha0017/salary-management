@@ -19,3 +19,10 @@ RSpec/ExampleLength:
 
 RSpec/MultipleExpectations:
   Max: 5
+
+# Request and integration specs describe a behaviour of the system, not a
+# class. Naming a class in the describe would be less accurate, not more.
+RSpec/DescribeClass:
+  Exclude:
+    - "spec/requests/**/*"
+    - "spec/integration/**/*"

@@ -119,6 +119,16 @@ amount is ever overwritten — only a period is closed — so history is a by-pr
 A correction is itself a dated record with `reason = correction`, which means mistakes are visible
 rather than erased.
 
+**On concurrency.** `RecordSalaryChange` originally took `SELECT ... FOR UPDATE` on the outgoing
+period. It was removed after measurement: a row lock cannot prevent a concurrent *insert* of a row
+that does not exist yet, which is precisely this race, and with two threads racing the loser failed
+identically with and without it. The two database constraints above are the actual guarantee, and
+the command now translates their violation into a `ConcurrentChange` the API answers as `409`.
+Leaving the lock in place would have implied a protection it does not provide.
+
+This is verified in `spec/integration/concurrent_salary_changes_spec.rb`, which runs two real
+threads against a real database — the only way to know whether the claim is true.
+
 **Rejected.** *A `salary` column on `employees`* — destroys history on every update; the original
 problem. *Pure append-only with no `effective_to`* — philosophically cleaner, but every read needs
 `DISTINCT ON` or a window function, which makes the hot path (the 10,000-row directory) markedly

@@ -7,6 +7,10 @@
 class RecordSalaryChange
   class BackdatedChange < StandardError; end
 
+  # Two changes for the same employee landing at the same moment. The loser is
+  # told to reload, rather than being shown a Postgres constraint name.
+  class ConcurrentChange < StandardError; end
+
   def self.call(...)
     new(...).call
   end
@@ -28,6 +32,11 @@ class RecordSalaryChange
       close_current_period
       create_new_period
     end
+  rescue ActiveRecord::RecordNotUnique, ActiveRecord::StatementInvalid => error
+    raise unless overlapping_period?(error)
+
+    raise ConcurrentChange,
+          "this employee's pay was changed by someone else a moment ago; reload and try again"
   end
 
   private
@@ -35,7 +44,14 @@ class RecordSalaryChange
   attr_reader :employee, :amount_minor, :currency_code, :effective_from, :reason, :note
 
   def close_current_period
-    current = employee.compensations.current.lock.first
+    # Deliberately not `SELECT ... FOR UPDATE`. A row lock cannot stop a
+    # concurrent insert of a row that does not exist yet, which is exactly the
+    # race here — measured, both with and without the lock, the loser fails the
+    # same way. The guarantee comes from the schema: an exclusion constraint on
+    # overlapping periods and a partial unique index allowing one open-ended
+    # period per employee. Leaving the lock in place would imply protection it
+    # does not give.
+    current = employee.compensations.current.first
     return if current.nil?
 
     if effective_from <= current.effective_from
@@ -61,5 +77,11 @@ class RecordSalaryChange
       reason: reason,
       note: note
     )
+  end
+
+  # Narrow on purpose. Any other StatementInvalid is a bug, and dressing it up
+  # as a retryable conflict would hide it.
+  def overlapping_period?(error)
+    error.is_a?(ActiveRecord::RecordNotUnique) || error.cause.is_a?(PG::ExclusionViolation)
   end
 end

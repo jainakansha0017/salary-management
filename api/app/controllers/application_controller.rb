@@ -10,6 +10,12 @@ class ApplicationController < ActionController::API
     )
   end
 
+  # Not a validation failure: the request was fine, it just lost a race. 409
+  # says so, and the message tells the user the one thing that helps — reload.
+  rescue_from RecordSalaryChange::ConcurrentChange do |error|
+    render_error(code: "conflict", message: error.message, status: :conflict)
+  end
+
   # Rails answers a missing top-level parameter with an HTML 400 for the same
   # reason, and a client that sent the body under the wrong key deserves to be
   # told which key it was.
