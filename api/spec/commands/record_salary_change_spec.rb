@@ -12,7 +12,6 @@ RSpec.describe RecordSalaryChange do
         effective_from: Date.new(2025, 1, 1), reason: :hire
       )
 
-      expect(result).to be_current
       expect(result.amount_minor).to eq(90_000_00)
       expect(result.effective_to).to be_nil
     end
@@ -49,7 +48,7 @@ RSpec.describe RecordSalaryChange do
       )
 
       expect(employee.compensations.current.count).to eq(1)
-      expect(employee.reload.current_compensation.amount_minor).to eq(99_000_00)
+      expect(employee.reload.effective_compensation.amount_minor).to eq(99_000_00)
     end
 
     it "keeps the full history readable" do
@@ -133,7 +132,7 @@ RSpec.describe RecordSalaryChange do
       # The rollback matters: a failure part-way through must not leave the
       # employee with a closed period and no replacement.
       expect(employee.compensations.current.count).to eq(1)
-      expect(employee.reload.current_compensation.effective_to).to be_nil
+      expect(employee.reload.effective_compensation.effective_to).to be_nil
     end
   end
 end

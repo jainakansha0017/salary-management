@@ -32,10 +32,9 @@ class EmployeeDirectoryQuery
     end
   end
 
-  def initialize(params = {}, scope: Employee.all, today: Date.current)
+  def initialize(params = {}, scope: Employee.all)
     @params = params.to_h.symbolize_keys
     @scope = scope
-    @today = today
   end
 
   def call
@@ -57,7 +56,14 @@ class EmployeeDirectoryQuery
 
   private
 
-  attr_reader :params, :scope, :today
+  attr_reader :params, :scope
+
+  # The directory is always a view of now, and "now" has to mean one thing here:
+  # a page that filtered by one date and priced by another would be quietly
+  # inconsistent with itself.
+  def today
+    Date.current
+  end
 
   def filter
     @filter ||= EmployeeFilter.new(params)
@@ -84,7 +90,7 @@ class EmployeeDirectoryQuery
       # The directory shows current pay, so it is always loaded — separately
       # rather than through the join, so that a page costs a fixed number of
       # queries no matter how many rows it holds.
-      .preload(:department, current_compensation: [ :currency, :base_currency ])
+      .preload(:department, effective_compensation: [ :currency, :base_currency ])
   end
 
   def ordered(relation)
@@ -97,7 +103,7 @@ class EmployeeDirectoryQuery
     # differently for each OFFSET.
     clauses << "employees.id ASC"
 
-    relation = relation.left_joins(:current_compensation) if sort == "salary"
+    relation = relation.left_joins(:effective_compensation) if sort == "salary"
     relation.order(Arel.sql(clauses.join(", ")))
   end
 

@@ -33,7 +33,7 @@ class EmployeeSummarySerializer
   # Null rather than omitted, and null rather than zero: someone who has left
   # has no current salary, and that is different from being paid nothing.
   def current_salary
-    compensation = employee.current_compensation
+    compensation = employee.effective_compensation
     return nil if compensation.nil?
 
     {

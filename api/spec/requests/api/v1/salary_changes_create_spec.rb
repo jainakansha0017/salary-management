@@ -19,7 +19,14 @@ RSpec.describe "POST /api/v1/employees/:employee_id/salary_changes" do
   end
 
   describe "recording a raise" do
-    before { create(:compensation, employee: employee, amount_minor: 90_000_00, effective_from: Date.new(2026, 1, 1)) }
+    # The change takes effect on 1 October, so the clock is fixed after it.
+    # Whether `current` is true depends on the date, which is the point of the
+    # describe below — leaving it to the real clock would make these examples
+    # quietly change meaning as time passed.
+    before do
+      travel_to(Date.new(2026, 12, 1))
+      create(:compensation, employee: employee, amount_minor: 90_000_00, effective_from: Date.new(2026, 1, 1))
+    end
 
     it "returns the new period, so the UI does not have to refetch to show it" do
       post_change
@@ -44,6 +51,25 @@ RSpec.describe "POST /api/v1/employees/:employee_id/salary_changes" do
       post_change(note: "Off-cycle, agreed at the April review")
 
       expect(body["data"]["note"]).to eq("Off-cycle, agreed at the April review")
+    end
+  end
+
+  # Agreeing a raise in advance is ordinary, and it is the case where "the
+  # open-ended period" and "what this person is paid" stop being the same row.
+  describe "recording a raise that has not taken effect yet" do
+    before do
+      travel_to(Date.new(2026, 9, 1))
+      create(:compensation, employee: employee, amount_minor: 90_000_00, effective_from: Date.new(2026, 1, 1))
+      post_change
+    end
+
+    it "accepts it, rather than refusing a date in the future" do
+      expect(response).to have_http_status(:created)
+      expect(body["data"]).to include("effective_from" => "2026-10-01", "effective_to" => nil)
+    end
+
+    it "does not call it current pay, because nobody is being paid it yet" do
+      expect(body["data"]["current"]).to be(false)
     end
   end
 

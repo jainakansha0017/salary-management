@@ -4,6 +4,10 @@ RSpec.describe EmployeeDirectoryQuery do
   let(:today) { Date.new(2026, 6, 30) }
   let!(:usd) { create(:currency) }
 
+  # The directory has one notion of "now", so the spec fixes the clock rather
+  # than passing a second date in alongside it.
+  before { travel_to(today) }
+
   def hire(last_name: "Zeta", first_name: "Ada", salary_minor: 100_000_00, **attributes)
     employee = create(:employee, first_name: first_name, last_name: last_name, **attributes)
     create(
@@ -15,39 +19,39 @@ RSpec.describe EmployeeDirectoryQuery do
   end
 
   def results(params = {})
-    described_class.new(params, today: today).call.records.to_a
+    described_class.new(params).call.records.to_a
   end
 
   describe "pagination" do
     before { 5.times { |n| hire(last_name: format("Name%02d", n)) } }
 
     it "returns only the requested page" do
-      page = described_class.new({ page: 2, page_size: 2 }, today: today).call
+      page = described_class.new({ page: 2, page_size: 2 }).call
 
       expect(page.records.size).to eq(2)
       expect(page.page).to eq(2)
     end
 
     it "reports the full size of the result set, not the size of the page" do
-      page = described_class.new({ page_size: 2 }, today: today).call
+      page = described_class.new({ page_size: 2 }).call
 
       expect(page.total_count).to eq(5)
       expect(page.total_pages).to eq(3)
     end
 
     it "caps the page size, so a request cannot ask the server to load everything" do
-      page = described_class.new({ page_size: 5_000 }, today: today).call
+      page = described_class.new({ page_size: 5_000 }).call
 
       expect(page.page_size).to eq(described_class::MAX_PAGE_SIZE)
     end
 
     it "falls back to the first page when the page number is nonsense" do
-      expect(described_class.new({ page: "-3" }, today: today).call.page).to eq(1)
-      expect(described_class.new({ page: "banana" }, today: today).call.page).to eq(1)
+      expect(described_class.new({ page: "-3" }).call.page).to eq(1)
+      expect(described_class.new({ page: "banana" }).call.page).to eq(1)
     end
 
     it "reports a single empty page rather than zero pages when nothing matches" do
-      page = described_class.new({ q: "nobody" }, today: today).call
+      page = described_class.new({ q: "nobody" }).call
 
       expect(page.total_count).to eq(0)
       expect(page.total_pages).to eq(1)
@@ -84,7 +88,7 @@ RSpec.describe EmployeeDirectoryQuery do
       10.times { |n| hire(last_name: format("Tied%02d", n), salary_minor: 90_000_00) }
 
       seen = (1..5).flat_map do |number|
-        described_class.new({ sort: "salary", page: number, page_size: 2 }, today: today).call.records.map(&:id)
+        described_class.new({ sort: "salary", page: number, page_size: 2 }).call.records.map(&:id)
       end
 
       expect(seen.uniq.size).to eq(10)
@@ -104,6 +108,42 @@ RSpec.describe EmployeeDirectoryQuery do
       last = hire(last_name: "Zeta")
 
       expect(results(sort: "name", direction: "desc")).to eq([ last, first ])
+    end
+  end
+
+  # A raise agreed in September to take effect in January is open-ended from the
+  # moment it is recorded, so "the open-ended period" and "what this person is
+  # paid today" are not the same row.
+  describe "the salary it shows" do
+    def hire_with_future_raise(paid_now:, rising_to:, **attributes)
+      employee = create(:employee, **attributes)
+      pay(employee, paid_now, from: today - 300, to: today + 90)
+      pay(employee, rising_to, from: today + 90, reason: :merit_increase)
+      employee
+    end
+
+    def pay(employee, amount_minor, from:, to: nil, reason: :hire)
+      create(
+        :compensation,
+        employee: employee, currency: usd, base_currency: usd,
+        amount_minor: amount_minor, amount_base_minor: amount_minor,
+        effective_from: from, effective_to: to, reason: reason
+      )
+    end
+
+    it "shows the pay in effect today, not a raise that has not started yet" do
+      hire_with_future_raise(paid_now: 90_000_00, rising_to: 120_000_00)
+
+      expect(results.sole.effective_compensation.amount_minor).to eq(90_000_00)
+    end
+
+    # The sort joins compensation separately from the preload, so it can be
+    # wrong on its own: this would rank someone by pay they are not receiving.
+    it "sorts on the pay in effect today, not on a raise that has not started yet" do
+      rising = hire_with_future_raise(paid_now: 100_000_00, rising_to: 300_000_00, last_name: "Rising")
+      higher = hire(last_name: "Higher", salary_minor: 200_000_00)
+
+      expect(results(sort: "salary")).to eq([ higher, rising ])
     end
   end
 
@@ -165,13 +205,13 @@ RSpec.describe EmployeeDirectoryQuery do
     it "loads a page in the same number of queries regardless of its size", :n_plus_one do
       ignoring_n_plus_one { 25.times { |n| hire(last_name: format("Name%02d", n)) } }
 
-      records = described_class.new({ page_size: 25 }, today: today).call.records
+      records = described_class.new({ page_size: 25 }).call.records
 
       # Touching everything the directory renders is the assertion: the `:n_plus_one`
       # tag fails the example if any of it triggers a query per row.
       salaries = records.map do |employee|
-        [ employee.department.name, employee.current_compensation.currency.code,
-          employee.current_compensation.base_currency.code ]
+        [ employee.department.name, employee.effective_compensation.currency.code,
+          employee.effective_compensation.base_currency.code ]
       end
 
       expect(salaries.size).to eq(25)

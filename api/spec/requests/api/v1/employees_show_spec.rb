@@ -83,6 +83,34 @@ RSpec.describe "GET /api/v1/employees/:id" do
     end
   end
 
+  # A raise can be agreed in advance, which makes "the open-ended period" and
+  # "what this person is paid today" two different rows.
+  describe "a raise that has been agreed but has not started" do
+    before do
+      travel_to(Date.new(2026, 9, 19))
+      period(from: Date.new(2024, 4, 1), to: Date.new(2027, 1, 1), amount_minor: 72_000_00, reason: :promotion)
+      period(from: Date.new(2027, 1, 1), to: nil, amount_minor: 90_000_00, reason: :merit_increase)
+
+      get "/api/v1/employees/#{employee.id}"
+    end
+
+    it "reports today's pay as the current salary, not the raise" do
+      expect(body["data"]["current_salary"]["amount"]).to include("amount_minor" => 72_000_00)
+    end
+
+    it "still lists the agreed raise in the history, so it is not hidden" do
+      expect(body["data"]["salary_history"].map { |entry| entry["effective_from"] })
+        .to eq(%w[2027-01-01 2024-04-01])
+    end
+
+    it "badges the period being paid now, not the one that is merely open-ended" do
+      upcoming, in_effect = body["data"]["salary_history"]
+
+      expect(upcoming).to include("current" => false, "effective_to" => nil)
+      expect(in_effect).to include("current" => true, "effective_to" => "2027-01-01")
+    end
+  end
+
   it "returns a JSON error rather than an HTML page for an employee who does not exist" do
     get "/api/v1/employees/0"
 

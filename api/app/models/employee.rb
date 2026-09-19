@@ -3,10 +3,14 @@ class Employee < ApplicationRecord
 
   has_many :compensations, dependent: :destroy
 
-  # A distinct association rather than `compensations.current.first`, so the
-  # directory can eager-load current pay for a page of employees in one query
-  # instead of one per employee.
-  has_one :current_compensation, -> { current },
+  # The pay in effect today — which is not the same as `Compensation.current`.
+  # That scope means "the open-ended period", and a raise agreed now but taking
+  # effect in January is open-ended from the day it is recorded. Reading it as
+  # today's pay would show people a salary they are not yet being paid.
+  #
+  # A distinct association rather than a method, so the directory can eager-load
+  # pay for a page of employees in one query instead of one per employee.
+  has_one :effective_compensation, -> { effective_on(Date.current) },
           class_name: "Compensation", inverse_of: :employee, dependent: nil
 
   # Stored values are canonical, so lookups and uniqueness checks do not have to

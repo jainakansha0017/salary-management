@@ -27,7 +27,11 @@ class CompensationSerializer
       exchange_rate_used: compensation.exchange_rate_used.to_s,
       effective_from: compensation.effective_from,
       effective_to: compensation.effective_to,
-      current: compensation.current?,
+      # Whether this is the pay being received today — not whether the period is
+      # open-ended. A raise agreed now to start in January is both open-ended
+      # and not yet being paid, and badging it "current" in the history would
+      # contradict the salary shown at the top of the same page.
+      current: compensation.in_effect_on?(Date.current),
       reason: compensation.reason,
       note: compensation.note
     }

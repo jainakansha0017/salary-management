@@ -98,14 +98,37 @@ RSpec.describe Compensation do
     end
   end
 
-  describe "Employee#current_compensation" do
-    it "returns only the open-ended record" do
+  describe "#in_effect_on?" do
+    # Half-open, matching the scope: effective on the start date, no longer
+    # effective on the end date, so two adjacent periods never both claim a day.
+    it "covers the start of the period but not its end" do
+      record = build(:compensation, effective_from: Date.new(2026, 1, 1), effective_to: Date.new(2027, 1, 1))
+
+      expect(record).to be_in_effect_on(Date.new(2026, 1, 1))
+      expect(record).to be_in_effect_on(Date.new(2026, 12, 31))
+      expect(record).not_to be_in_effect_on(Date.new(2027, 1, 1))
+      expect(record).not_to be_in_effect_on(Date.new(2025, 12, 31))
+    end
+
+    it "is not yet in effect for an open-ended period that starts later" do
+      record = build(:compensation, effective_from: Date.new(2027, 1, 1), effective_to: nil)
+
+      expect(record).not_to be_in_effect_on(Date.new(2026, 9, 19))
+    end
+  end
+
+  describe "Employee#effective_compensation" do
+    before { travel_to(Date.new(2026, 6, 30)) }
+
+    it "returns the period covering today, not simply the latest one" do
       create(:compensation, employee: employee, amount_minor: 100_000_00,
                             effective_from: Date.new(2025, 1, 1), effective_to: Date.new(2026, 1, 1))
-      current = create(:compensation, employee: employee, amount_minor: 110_000_00,
-                                      effective_from: Date.new(2026, 1, 1))
+      in_effect = create(:compensation, employee: employee, amount_minor: 110_000_00,
+                                        effective_from: Date.new(2026, 1, 1), effective_to: Date.new(2027, 1, 1))
+      create(:compensation, employee: employee, amount_minor: 130_000_00,
+                            effective_from: Date.new(2027, 1, 1))
 
-      expect(employee.reload.current_compensation).to eq(current)
+      expect(employee.reload.effective_compensation).to eq(in_effect)
     end
   end
 end

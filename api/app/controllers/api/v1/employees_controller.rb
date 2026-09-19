@@ -12,12 +12,12 @@ module Api
       end
 
       def show
-        # `current_compensation` is one of `compensations`, but Rails will not
+        # `effective_compensation` is one of `compensations`, but Rails will not
         # infer that, so it is preloaded too. Both are a fixed number of
         # queries for one employee, which is the property that matters.
         employee = Employee.preload(
           :department,
-          current_compensation: [ :currency, :base_currency ],
+          effective_compensation: [ :currency, :base_currency ],
           compensations: [ :currency, :base_currency ]
         ).find(params[:id])
 

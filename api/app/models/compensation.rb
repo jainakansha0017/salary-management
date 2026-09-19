@@ -22,6 +22,12 @@ class Compensation < ApplicationRecord
 
   # Half-open, matching ExchangeRate: effective on the start date, no longer
   # effective on the end date.
+
+  # The open-ended period — the row the write path closes, and the one the
+  # partial unique index allows exactly one of. Deliberately *not* "the salary
+  # being paid today": a raise recorded now to take effect in January is
+  # open-ended from the moment it is written. Use `effective_on` to ask what
+  # someone is actually paid on a date.
   scope :current, -> { where(effective_to: nil) }
   scope :effective_on, ->(date) {
     where(effective_from: ..date)
@@ -29,8 +35,10 @@ class Compensation < ApplicationRecord
   }
   scope :newest_first, -> { order(effective_from: :desc) }
 
-  def current?
-    effective_to.nil?
+  # Named for the date it asks about, because "is this the current one?" has two
+  # defensible answers for a raise that has been agreed but has not started.
+  def in_effect_on?(date)
+    effective_from <= date && (effective_to.nil? || effective_to > date)
   end
 
   def amount

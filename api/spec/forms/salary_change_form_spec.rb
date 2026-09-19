@@ -27,7 +27,7 @@ RSpec.describe SalaryChangeForm do
       subject = form
 
       expect(subject.save).to be(true)
-      expect(subject.compensation).to be_current
+      expect(subject.compensation.effective_to).to be_nil
       expect(subject.compensation.amount_minor).to eq(99_000_00)
       expect(subject.compensation.effective_from).to eq(Date.new(2026, 10, 1))
     end

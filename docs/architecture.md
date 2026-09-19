@@ -114,10 +114,18 @@ Integrity is enforced in the database, not just in Ruby:
 - a partial unique index on `(employee_id) WHERE effective_to IS NULL` guarantees exactly one
   current record per employee.
 
-**Consequences.** "Current salary" is an indexed lookup rather than a sort-and-take-first. No
-amount is ever overwritten — only a period is closed — so history is a by-product of normal use.
-A correction is itself a dated record with `reason = correction`, which means mistakes are visible
-rather than erased.
+**Consequences.** No amount is ever overwritten — only a period is closed — so history is a
+by-product of normal use. A correction is itself a dated record with `reason = correction`, which
+means mistakes are visible rather than erased.
+
+**On "current".** The word means two different things, and conflating them was a real bug. A raise
+agreed in September to start in January is written as an open-ended period the moment it is
+recorded, so `effective_to IS NULL` is *not* the same as "what this person is paid today". The
+first is a fact about the write path — the row the command closes, and the one the partial unique
+index allows exactly one of. The second is a question about a date, and it is answered by
+`effective_on(date)` everywhere: the directory, the detail page, the history badge, and analytics.
+Reading the open-ended row as today's pay would have shown people a salary they were not yet being
+paid, and inflated payroll cost with it.
 
 **On concurrency.** `RecordSalaryChange` originally took `SELECT ... FOR UPDATE` on the outgoing
 period. It was removed after measurement: a row lock cannot prevent a concurrent *insert* of a row
@@ -251,9 +259,11 @@ answers a different question than the one HR is asking.
 The directory is the hot path: 10,000 employees, filtered, sorted, paginated.
 
 - **Server-side pagination always.** The API never returns an unbounded collection.
-- **Current compensation is a partial-index lookup** (`WHERE effective_to IS NULL`), not a sort.
-- **Sorting by pay uses the stored `amount_base_minor`** — one integer column, directly indexable,
-  no join to rates (ADR-3).
+- **Sorting by pay uses the stored `amount_base_minor`** — one integer column, no join to rates
+  (ADR-3). Measured, this sort is a top-N heapsort over the joined population either way: 10.2 ms
+  when compensation was selected by partial index, 9.9 ms when selected by effective date. The
+  index was not what made it fast, and `pg_stat_user_indexes` shows the partial index added for
+  this purpose was never once scanned. Recorded here because the original claim was wrong.
 - **Covering indexes on the real filter combinations** — country, department, job level.
 - **No N+1.** The directory joins current compensation once; violations are caught by a test, not
   by inspection.
