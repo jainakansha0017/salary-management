@@ -40,6 +40,56 @@ CREATE TABLE public.ar_internal_metadata (
 
 
 --
+-- Name: compensations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.compensations (
+    id bigint NOT NULL,
+    employee_id bigint NOT NULL,
+    amount_minor bigint NOT NULL,
+    currency_code character varying(3) NOT NULL,
+    amount_base_minor bigint NOT NULL,
+    base_currency_code character varying(3) NOT NULL,
+    exchange_rate_used numeric(18,8) NOT NULL,
+    effective_from date NOT NULL,
+    effective_to date,
+    reason character varying NOT NULL,
+    note text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT compensations_amount_positive CHECK ((amount_minor > 0)),
+    CONSTRAINT compensations_base_amount_positive CHECK ((amount_base_minor > 0)),
+    CONSTRAINT compensations_period_ordered CHECK (((effective_to IS NULL) OR (effective_to > effective_from)))
+);
+
+
+--
+-- Name: COLUMN compensations.effective_to; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.compensations.effective_to IS 'null means this is the current salary';
+
+
+--
+-- Name: compensations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.compensations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: compensations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.compensations_id_seq OWNED BY public.compensations.id;
+
+
+--
 -- Name: currencies; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -200,6 +250,13 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: compensations id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compensations ALTER COLUMN id SET DEFAULT nextval('public.compensations_id_seq'::regclass);
+
+
+--
 -- Name: departments id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -226,6 +283,22 @@ ALTER TABLE ONLY public.exchange_rates ALTER COLUMN id SET DEFAULT nextval('publ
 
 ALTER TABLE ONLY public.ar_internal_metadata
     ADD CONSTRAINT ar_internal_metadata_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: compensations compensations_no_overlapping_periods; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compensations
+    ADD CONSTRAINT compensations_no_overlapping_periods EXCLUDE USING gist (employee_id WITH =, daterange(effective_from, effective_to, '[)'::text) WITH &&);
+
+
+--
+-- Name: compensations compensations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compensations
+    ADD CONSTRAINT compensations_pkey PRIMARY KEY (id);
 
 
 --
@@ -274,6 +347,27 @@ ALTER TABLE ONLY public.exchange_rates
 
 ALTER TABLE ONLY public.schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: index_compensations_on_employee_and_start; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_compensations_on_employee_and_start ON public.compensations USING btree (employee_id, effective_from);
+
+
+--
+-- Name: index_compensations_on_employee_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_compensations_on_employee_id ON public.compensations USING btree (employee_id);
+
+
+--
+-- Name: index_current_compensations_on_base_amount; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_current_compensations_on_base_amount ON public.compensations USING btree (amount_base_minor) WHERE (effective_to IS NULL);
 
 
 --
@@ -333,11 +427,34 @@ CREATE INDEX index_exchange_rates_on_pair_and_start ON public.exchange_rates USI
 
 
 --
+-- Name: index_one_current_compensation_per_employee; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_one_current_compensation_per_employee ON public.compensations USING btree (employee_id) WHERE (effective_to IS NULL);
+
+
+--
 -- Name: employees fk_rails_0025f65a97; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.employees
     ADD CONSTRAINT fk_rails_0025f65a97 FOREIGN KEY (department_id) REFERENCES public.departments(id);
+
+
+--
+-- Name: compensations fk_rails_2db629113d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compensations
+    ADD CONSTRAINT fk_rails_2db629113d FOREIGN KEY (currency_code) REFERENCES public.currencies(code);
+
+
+--
+-- Name: compensations fk_rails_931c69f5dc; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compensations
+    ADD CONSTRAINT fk_rails_931c69f5dc FOREIGN KEY (base_currency_code) REFERENCES public.currencies(code);
 
 
 --
@@ -357,12 +474,21 @@ ALTER TABLE ONLY public.exchange_rates
 
 
 --
+-- Name: compensations fk_rails_e6d05c8678; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compensations
+    ADD CONSTRAINT fk_rails_e6d05c8678 FOREIGN KEY (employee_id) REFERENCES public.employees(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260919100500'),
 ('20260919100400'),
 ('20260919100300'),
 ('20260919100200'),

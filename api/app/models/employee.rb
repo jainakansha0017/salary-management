@@ -1,6 +1,14 @@
 class Employee < ApplicationRecord
   belongs_to :department
 
+  has_many :compensations, dependent: :destroy
+
+  # A distinct association rather than `compensations.current.first`, so the
+  # directory can eager-load current pay for a page of employees in one query
+  # instead of one per employee.
+  has_one :current_compensation, -> { current },
+          class_name: "Compensation", inverse_of: :employee, dependent: nil
+
   # Stored values are canonical, so lookups and uniqueness checks do not have to
   # care how the data was typed in.
   normalizes :email, with: ->(email) { email.strip.downcase }
