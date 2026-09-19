@@ -1,16 +1,6 @@
 # Answers "how do we pay this group of people?" — headcount, total cost, the
 # spread, and the shape of the distribution.
-#
-# The population is defined by *compensation*, not by employee status: whoever
-# had a salary period in effect on `as_of`. Because a leaver's final period is
-# closed on their leaving date, that one rule excludes departed staff for free,
-# and it makes the figures answerable for any past date without a second notion
-# of who counted as employed then.
-#
-# Every number here is computed by Postgres (ADR-4). Nothing in this file loads
-# a Compensation object — at 10,000 rows the aggregation is cheap and the object
-# allocation is not.
-class PayrollSummaryQuery
+class PayrollSummaryQuery < PayrollQuery
   PERCENTILES = { p10: 0.10, p25: 0.25, median: 0.50, p75: 0.75, p90: 0.90 }.freeze
 
   # A target, not a guarantee. Band edges are rounded to readable numbers, which
@@ -27,12 +17,6 @@ class PayrollSummaryQuery
   # above, so no one is counted twice.
   Band = Struct.new(:from_minor, :to_minor, :headcount, keyword_init: true)
 
-  def initialize(params = {}, scope: Employee.all, today: Date.current)
-    @params = params.to_h.symbolize_keys
-    @scope = scope
-    @today = today
-  end
-
   def call
     headcount, total, average, minimum, maximum, *percentiles = aggregate
 
@@ -48,30 +32,7 @@ class PayrollSummaryQuery
     )
   end
 
-  def applied
-    filter.applied.merge(as_of: as_of)
-  end
-
-  def as_of
-    @as_of ||= parse_date(params[:as_of]) || today
-  end
-
   private
-
-  attr_reader :params, :scope, :today
-
-  def filter
-    @filter ||= EmployeeFilter.new(params)
-  end
-
-  # A subquery rather than a join: the filters narrow employees, the aggregate
-  # runs over compensations, and keeping them separate means the aggregate never
-  # sees a duplicated row.
-  def population
-    @population ||= Compensation
-                    .effective_on(as_of)
-                    .where(employee_id: filter.apply(scope).select(:id))
-  end
 
   def aggregate
     population.pick(
@@ -90,10 +51,6 @@ class PayrollSummaryQuery
       # minor unit.
       *PERCENTILES.each_value.map { |fraction| Arel.sql(percentile_sql(fraction)) }
     )
-  end
-
-  def percentile_sql(fraction)
-    "percentile_cont(#{fraction}) WITHIN GROUP (ORDER BY amount_base_minor)"
   end
 
   # Counts per band in one pass. `width_bucket` does the arithmetic in the
@@ -126,22 +83,5 @@ class PayrollSummaryQuery
     magnitude = 10**Math.log10(raw).floor
 
     [ 1, 2, 5, 10 ].map { |multiple| magnitude * multiple }.find { |width| width >= raw }
-  end
-
-  def base_currency
-    @base_currency ||= Currency.find(Rails.configuration.x.base_currency_code)
-  end
-
-  # `Date.iso8601`, not `Date.parse`. The latter is a natural-language guesser —
-  # it reads "last tuesday" as a date, and "03/04" as the fourth of March — so a
-  # typo would be answered with confident figures for the wrong day.
-  #
-  # An unrecognised date falls back to today rather than erroring, matching how
-  # the directory treats an unknown sort key. `applied` echoes what was used, so
-  # the client can tell it was ignored.
-  def parse_date(value)
-    Date.iso8601(value.to_s)
-  rescue Date::Error
-    nil
   end
 end

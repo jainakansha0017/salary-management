@@ -27,6 +27,13 @@ class ApplicationController < ActionController::API
     )
   end
 
+  # A parameter the server could ignore is ignored; one that *is* the question
+  # is refused. Answering a breakdown by something other than what was asked for
+  # would be worse than saying no.
+  rescue_from PayrollBreakdownQuery::UnknownDimension do |error|
+    render_error(code: "invalid_parameter", message: error.message, status: :bad_request)
+  end
+
   private
 
   # One error shape for the whole API: a stable `code` for the client to branch

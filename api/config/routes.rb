@@ -13,6 +13,7 @@ Rails.application.routes.draw do
       # Not a REST resource — these are questions, not things. Named after what
       # they answer rather than forced into a `resources` block.
       get "analytics/summary", to: "analytics#summary"
+      get "analytics/breakdown", to: "analytics#breakdown"
     end
   end
 
