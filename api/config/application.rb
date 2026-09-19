@@ -40,5 +40,11 @@ module Api
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
+
+    # The domain relies on PostgreSQL exclusion constraints to guarantee that
+    # compensation and exchange rate periods cannot overlap. schema.rb cannot
+    # represent those, so dumping to structure.sql is what keeps the constraint
+    # real in the test database rather than silently absent.
+    config.active_record.schema_format = :sql
   end
 end
