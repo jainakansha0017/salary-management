@@ -1,0 +1,28 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Ruby / Rails
+/api/tmp/*
+/api/log/*
+!/api/tmp/.keep
+!/api/log/.keep
+/api/storage/*
+!/api/storage/.keep
+/api/.bundle
+/api/vendor/bundle
+*.gem
+
+# Node / React
+node_modules/
+/web/dist
+/web/.vite
+npm-debug.log*
+yarn-error.log*
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
