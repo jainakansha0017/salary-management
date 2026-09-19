@@ -52,20 +52,19 @@ class EmployeeDirectoryQuery
   # Exposed so the API can echo back what it actually did, rather than the
   # client having to guess how its parameters were interpreted.
   def applied
-    { search: search_term, status: status, sort: sort, direction: direction }
+    filter.applied.merge(status: status, sort: sort, direction: direction)
   end
 
   private
 
   attr_reader :params, :scope, :today
 
-  def apply_filters(relation)
-    relation = relation.search(search_term) if search_term.present?
-    relation = relation.where(country_code: countries) if countries.any?
-    relation = relation.where(department_id: departments) if departments.any?
-    relation = relation.where(job_level: job_levels) if job_levels.any?
+  def filter
+    @filter ||= EmployeeFilter.new(params)
+  end
 
-    by_status(relation)
+  def apply_filters(relation)
+    by_status(filter.apply(relation))
   end
 
   def by_status(relation)
@@ -100,22 +99,6 @@ class EmployeeDirectoryQuery
 
     relation = relation.left_joins(:current_compensation) if sort == "salary"
     relation.order(Arel.sql(clauses.join(", ")))
-  end
-
-  def search_term
-    @search_term ||= params[:q].to_s.strip
-  end
-
-  def countries
-    @countries ||= Array(params[:country_code]).map { |code| code.to_s.strip.upcase }.reject(&:empty?)
-  end
-
-  def departments
-    @departments ||= Array(params[:department_id]).map { |id| Integer(id, exception: false) }.compact
-  end
-
-  def job_levels
-    @job_levels ||= Array(params[:job_level]).map { |level| level.to_s.strip }.reject(&:empty?)
   end
 
   def status

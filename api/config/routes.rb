@@ -9,6 +9,10 @@ Rails.application.routes.draw do
         # history is append-only, so there is nothing to update or delete.
         resources :salary_changes, only: [ :create ]
       end
+
+      # Not a REST resource — these are questions, not things. Named after what
+      # they answer rather than forced into a `resources` block.
+      get "analytics/summary", to: "analytics#summary"
     end
   end
 
