@@ -3,12 +3,15 @@ module Api
     class EmployeesController < ApplicationController
       def index
         query = EmployeeDirectoryQuery.new(directory_params)
-        page = query.call
 
-        render json: {
-          data: page.records.map { |employee| EmployeeSummarySerializer.new(employee).as_json },
-          meta: meta_for(page).merge(applied: query.applied)
-        }
+        respond_to do |format|
+          format.json { render json: json_page(query) }
+          # Same URL, same parameters, no page boundary. An export is the list
+          # the user is already looking at, so there is no second set of
+          # filters to keep in step and nothing to explain about why a download
+          # holds different people from the screen it came from.
+          format.csv { send_csv(query) }
+        end
       end
 
       def show
@@ -37,6 +40,15 @@ module Api
         )
       end
 
+      def json_page(query)
+        page = query.call
+
+        {
+          data: page.records.map { |employee| EmployeeSummarySerializer.new(employee).as_json },
+          meta: meta_for(page).merge(applied: query.applied)
+        }
+      end
+
       def meta_for(page)
         {
           page: page.page,
@@ -44,6 +56,15 @@ module Api
           total_count: page.total_count,
           total_pages: page.total_pages
         }
+      end
+
+      # Dated in the filename because an export is a snapshot, and two of them
+      # in a downloads folder are otherwise indistinguishable.
+      def send_csv(query)
+        send_data EmployeeCsvSerializer.new(query.all).call,
+                  type: "text/csv",
+                  filename: "employees-#{Date.current.iso8601}.csv",
+                  disposition: "attachment"
       end
     end
   end

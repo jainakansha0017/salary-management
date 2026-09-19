@@ -29,6 +29,17 @@ RSpec.describe "GET /api/v1/employees" do
     )
   end
 
+  # The directory has two representations now, so a client that states no
+  # preference has to be given one rather than a 406. Most HTTP clients send no
+  # `Accept` header at all, and Rails reads that as a request for HTML.
+  it "answers with JSON when the client asks for no format in particular" do
+    hire
+
+    get "/api/v1/employees"
+
+    expect(response.media_type).to eq("application/json")
+  end
+
   it "reports pagination totals, so the UI can render page controls" do
     3.times { hire }
 

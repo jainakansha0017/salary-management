@@ -1,4 +1,10 @@
 class ApplicationController < ActionController::API
+  # Not included in `ActionController::API`, because an API usually speaks one
+  # format. This one has a second: the directory is also downloadable as a
+  # spreadsheet, and that is the same resource in another representation rather
+  # than a different endpoint.
+  include ActionController::MimeResponds
+
   # A JSON client that asks for an employee who does not exist should get JSON
   # back. Left alone, Rails answers with an HTML error page, which the UI would
   # have to parse before it could tell the user anything useful.

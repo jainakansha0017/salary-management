@@ -48,6 +48,17 @@ class EmployeeDirectoryQuery
     )
   end
 
+  # The same people in the same order as `call`, without the page boundary —
+  # what the CSV export writes.
+  #
+  # Public so that the export cannot drift from the list it was taken from:
+  # identical filters, status rule and ordering by construction, rather than by
+  # two objects agreeing to stay in step. What the caller does about loading is
+  # its own business; this returns a relation, not records.
+  def all
+    ordered(apply_filters(scope))
+  end
+
   # Exposed so the API can echo back what it actually did, rather than the
   # client having to guess how its parameters were interpreted.
   def applied
