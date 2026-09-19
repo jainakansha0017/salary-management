@@ -1,0 +1,17 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  database: salary_management_development
+
+test:
+  <<: *default
+  database: salary_management_test
+
+# Driven entirely by DATABASE_URL, which every managed host provides.
+production:
+  <<: *default
+  url: <%= ENV["DATABASE_URL"] %>

@@ -4,6 +4,7 @@
 !.env.example
 
 # Ruby / Rails
+/api/config/master.key
 /api/tmp/*
 /api/log/*
 !/api/tmp/.keep
