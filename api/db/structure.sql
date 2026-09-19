@@ -378,13 +378,6 @@ CREATE INDEX index_compensations_on_employee_id ON public.compensations USING bt
 
 
 --
--- Name: index_current_compensations_on_base_amount; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_current_compensations_on_base_amount ON public.compensations USING btree (amount_base_minor) WHERE (effective_to IS NULL);
-
-
---
 -- Name: index_departments_on_name; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -509,6 +502,7 @@ ALTER TABLE ONLY public.compensations
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260919120000'),
 ('20260919110000'),
 ('20260919100500'),
 ('20260919100400'),
