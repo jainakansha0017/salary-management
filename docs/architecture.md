@@ -194,6 +194,48 @@ controllers* — untestable without the full request cycle, and impossible to re
 
 ---
 
+### ADR-6 — Money crosses the wire as minor units, formatted in the browser
+
+**Context.** ADR-1 keeps money exact in the database. That guarantee has to survive the JSON
+response, and JSON numbers are IEEE 754 doubles — `120000.55` is not representable exactly.
+
+**Decision.** Every amount is serialised as `{ amount_minor, currency_code, minor_unit }`. The
+client formats with `Intl.NumberFormat`; it never does arithmetic on the value.
+
+**Consequences.** The UI needs a formatting helper rather than rendering a field directly. In
+exchange, the exponent travels with the amount, so the client cannot assume two decimals and
+display ¥15,000,000 as ¥150,000.00.
+
+**Rejected.** *A pre-formatted string* (`"$120,000.55"`) — unsortable, unparseable, and bakes the
+server's locale into the response. *A float* — precision loss on exactly the field that must not
+lose precision.
+
+---
+
+### ADR-7 — A trigram index for directory search
+
+**Context.** HR searches by fragments: part of a surname, the tail of an employee number. That is
+`ILIKE '%term%'`, and a leading wildcard makes a btree index unusable, leaving a sequential scan
+over 10,000 rows for every keystroke.
+
+**Decision.** One GIN trigram index over the concatenation of the four searchable columns
+(`first_name`, `last_name`, `email`, `employee_number`), with `Employee::SEARCHABLE_TEXT` holding
+the identical expression the query uses.
+
+**Consequences.** Measured on the full seed, search drops from a sequential scan to a bitmap index
+scan — 0.27 ms for 88 matches out of 10,000. Searching across first and last name together ("Anna
+Kowalski") works for free, because the index is on the joined string.
+
+The risk is drift: change the expression in the model without a matching migration and search
+silently becomes a sequential scan again. A spec runs `EXPLAIN` with `enable_seqscan = off` and
+asserts the index name appears in the plan, so the drift fails the build instead of the demo.
+
+**Rejected.** *Four separate `ILIKE` clauses* — four indexes, and no match across a full name.
+*PostgreSQL full-text search* — stems and tokenises, so "kowal" would not match "Kowalski"; it
+answers a different question than the one HR is asking.
+
+---
+
 ## 4. Performance approach
 
 The directory is the hot path: 10,000 employees, filtered, sorted, paginated.

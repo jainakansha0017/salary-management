@@ -21,6 +21,22 @@ class Employee < ApplicationRecord
   validates :hired_on, presence: true
   validate :ended_on_cannot_precede_hired_on
 
+  # One expression covering everything HR types into the search box. It is
+  # indexed verbatim by the trigram index added in
+  # 20260919110000_add_search_index_to_employees, so changing it without a
+  # matching migration would quietly turn search back into a sequential scan.
+  SEARCHABLE_TEXT = "(employees.first_name || ' ' || employees.last_name || " \
+                    "' ' || employees.email || ' ' || employees.employee_number)".freeze
+
+  # Substring rather than prefix matching: "kowal" should find Kowalski, and a
+  # surname is not always the first thing someone types.
+  scope :search, ->(term) {
+    cleaned = term.to_s.strip
+    next all if cleaned.empty?
+
+    where("#{SEARCHABLE_TEXT} ILIKE ?", "%#{sanitize_sql_like(cleaned)}%")
+  }
+
   # Expressed as "active on a date" rather than a bare `active`, because every
   # analytics figure is really a question about a point in time. `active` is the
   # common case of that, not a separate idea.

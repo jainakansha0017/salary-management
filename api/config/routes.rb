@@ -1,10 +1,14 @@
 Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+  # Versioned from the first endpoint. The React app is deployed separately and
+  # will not always be redeployed in step with the API, so the URL has to say
+  # which contract the client is holding.
+  namespace :api do
+    namespace :v1 do
+      resources :employees, only: [ :index ]
+    end
+  end
 
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
+  # Returns 200 if the app boots with no exceptions. The host's health check
+  # uses it, so a broken deploy fails rather than serving errors.
   get "up" => "rails/health#show", as: :rails_health_check
-
-  # Defines the root path route ("/")
-  # root "posts#index"
 end

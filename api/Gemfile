@@ -15,6 +15,12 @@ gem "bootsnap", require: false
 # The React app is served from a different origin, so the API must opt in to it.
 gem "rack-cors"
 
+# Pinned, not chosen. RuboCop depends on `json >= 2.3`, which resolves to 3.x,
+# and json 3 dropped the `quirks_mode` keyword that Rails 7.1's JSON encoder
+# still passes — so every `render json:` raises ArgumentError. Rails 7.2 fixed
+# this; until the upgrade, the constraint has to live here.
+gem "json", "~> 2.7"
+
 group :development, :test do
   gem "debug", platforms: %i[mri mswin mswin64 mingw x64_mingw]
   gem "rspec-rails", "~> 6.1"

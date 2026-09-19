@@ -83,6 +83,50 @@ RSpec.describe Employee do
     end
   end
 
+  describe ".search" do
+    let!(:kowalski) { create(:employee, first_name: "Anna", last_name: "Kowalski", email: "anna.kowalski@acme.example") }
+    let!(:tanaka) { create(:employee, first_name: "Yui", last_name: "Tanaka", email: "yui.tanaka@acme.example", employee_number: "ACME-09112") }
+
+    it "matches a fragment from the middle of a surname" do
+      expect(described_class.search("owal")).to contain_exactly(kowalski)
+    end
+
+    it "ignores case, because nobody types a surname the way it is stored" do
+      expect(described_class.search("KOWALSKI")).to contain_exactly(kowalski)
+    end
+
+    it "matches on email and on employee number, so one box covers all of them" do
+      expect(described_class.search("yui.tanaka@")).to contain_exactly(tanaka)
+      expect(described_class.search("09112")).to contain_exactly(tanaka)
+    end
+
+    it "matches across the first and last name together" do
+      expect(described_class.search("Anna Kowalski")).to contain_exactly(kowalski)
+    end
+
+    it "returns everything for a blank term rather than nothing" do
+      expect(described_class.search("  ")).to include(kowalski, tanaka)
+    end
+
+    it "treats a wildcard as a literal character, not as a pattern" do
+      # Without escaping, "%" would match every employee in the company.
+      expect(described_class.search("%")).to be_empty
+    end
+
+    # The whole point of SEARCHABLE_TEXT is that it matches the expression the
+    # trigram index is built on. At test-suite row counts the planner would
+    # choose a sequential scan anyway, so seqscan is disabled to ask the
+    # narrower question: *can* this query use the index?
+    it "is answerable from the trigram index" do
+      plan = described_class.connection.execute(<<~SQL.squish).map { |row| row["QUERY PLAN"] }.join("\n")
+        SET LOCAL enable_seqscan = off;
+        EXPLAIN #{described_class.search('kowal').to_sql}
+      SQL
+
+      expect(plan).to include("index_employees_on_searchable_text")
+    end
+  end
+
   describe "#full_name" do
     it "joins the first and last name" do
       employee = build(:employee, first_name: "Ada", last_name: "Lovelace")

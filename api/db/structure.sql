@@ -23,6 +23,20 @@ CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public;
 COMMENT ON EXTENSION btree_gist IS 'support for indexing common datatypes in GiST';
 
 
+--
+-- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pg_trgm; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -420,6 +434,13 @@ CREATE INDEX index_employees_on_job_level ON public.employees USING btree (job_l
 
 
 --
+-- Name: index_employees_on_searchable_text; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_employees_on_searchable_text ON public.employees USING gin (((((((((first_name)::text || ' '::text) || (last_name)::text) || ' '::text) || (email)::text) || ' '::text) || (employee_number)::text)) public.gin_trgm_ops);
+
+
+--
 -- Name: index_exchange_rates_on_pair_and_start; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -488,6 +509,7 @@ ALTER TABLE ONLY public.compensations
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260919110000'),
 ('20260919100500'),
 ('20260919100400'),
 ('20260919100300'),
