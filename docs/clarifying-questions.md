@@ -219,8 +219,7 @@ transcripts, or a curated log of the significant prompts with the reasoning behi
 **Answer:** The curated log is sufficient. "You may include prompts that influenced the design and
 relevant decisions/rejections."
 
-**What I did with that.** Confirms the shape I planned, including the rejections. It lives in
-`docs/ai-log.md`.
+**What I did with that.** Confirms the shape I planned, including the rejections.
 
 ---
 
