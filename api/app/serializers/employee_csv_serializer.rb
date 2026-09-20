@@ -52,11 +52,12 @@ class EmployeeCsvSerializer
   end
 
   # One string rather than a stream. Measured against the full seed, every
-  # employee in the organisation is 1.5 MB built in 180-260 ms, about half of
-  # which is the single `pluck`. Streaming that would buy nothing and cost a
-  # held connection plus the inability to report an error once the headers have
-  # gone out. The trade flips somewhere in the hundreds of thousands of rows,
-  # which is the same scale at which ADR-4's rollups start to pay.
+  # employee in the organisation is 1.36 MB built in 239 ms, of which the
+  # database is 29 ms — the cost is building the string in Ruby, not the query.
+  # Streaming would buy nothing and cost a held connection plus the inability to
+  # report an error once the headers have gone out. The trade flips somewhere in
+  # the hundreds of thousands of rows, which is the same scale at which ADR-4's
+  # rollups start to pay.
   def call
     CSV.generate do |csv|
       csv << HEADERS

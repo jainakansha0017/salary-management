@@ -305,13 +305,16 @@ The directory is the hot path: 10,000 employees, filtered, sorted, paginated.
   when compensation was selected by partial index, 9.9 ms when selected by effective date. The
   index was not what made it fast, and `pg_stat_user_indexes` shows the partial index added for
   this purpose was never once scanned. Recorded here because the original claim was wrong.
-- **Covering indexes on the real filter combinations** — country, department, job level.
-- **No N+1.** The directory joins current compensation once; violations are caught by a test, not
-  by inspection.
+- **Single-column indexes on the filters HR actually uses** — country, department, job level. Each
+  is measured taking a bitmap index scan: 0.85 ms and 0.68 ms respectively. Not composite indexes:
+  the facets are combined freely, and a composite index only helps a prefix of its own column order.
+- **No N+1.** The directory loads current pay for the whole page in one statement, not one per row,
+  so a page costs a fixed five statements at any page size. Violations are caught by a test, and each
+  guard has been confirmed to fail when the bulk load is removed.
 
 Measurements with `EXPLAIN (ANALYZE, BUFFERS)` against the full seed are recorded in
-`docs/performance.md` as the queries are built, so the claims here are evidenced rather than
-asserted.
+`docs/performance.md`, including two claims that measurement disproved and one benchmark that was
+measuring the ActiveRecord query cache rather than Postgres.
 
 ## 5. Testing approach
 
