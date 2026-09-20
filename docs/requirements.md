@@ -23,7 +23,7 @@ and answer compensation questions from Finance and leadership without building a
 | # | Capability | Why it matters |
 | --- | --- | --- |
 | 1 | **Employee directory** — search by name/email, filter by country, department and job level, server-side paginated and sorted | The everyday task. Must stay fast at 10,000 rows. |
-| 2 | **Employee detail with full salary history** — every compensation record, effective-dated | Directly fixes failure (1). Answers "what were they on last year?" |
+| 2 | **Employee detail with full salary history** — every compensation record, effective-dated | Directly fixes failure (1). Answers "what were they on last year?" *Confirmed optional by the team; kept deliberately — see below.* |
 | 3 | **Record a salary change** — new effective-dated record, never an in-place edit | Makes history a by-product of normal use rather than a discipline. |
 | 4 | **Multi-currency normalisation** — salaries stored in local currency, converted to a base currency for any comparison | Directly fixes failure (2). The core domain problem. |
 | 5 | **Compensation analytics** — headcount and total payroll cost by country/department, median and percentile pay, salary distribution | Directly fixes failure (3). This is the "how do we pay people?" surface. |
@@ -42,6 +42,27 @@ and answer compensation questions from Finance and leadership without building a
 | **Org hierarchy / reporting lines** | Interesting for analytics ("cost of a manager's org") but not required to answer the stated questions, and it pulls in recursive queries. |
 | **Bulk CSV import** | Export is in; import is out. A real migration needs validation, dry-run and partial-failure reporting to be trustworthy — enough substance to be its own increment. The seed script covers getting 10,000 employees in. |
 | **Soft deletes / full audit trail** | Salary history is versioned, which covers the question that actually gets asked. A general audit log is infrastructure, not product. |
+| **Outlier / pay-equity flagging** | "Who is underpaid?" needs a defensible peer group before it is a feature rather than a number — and an L5 in India earns less than an L3 in the US, so the obvious grouping is the wrong one. Shipping a confident-looking list built on a bad definition is worse than not shipping it. The breakdown already exposes the quartiles, so filtering the directory to a group answers it with the manager's judgement in the loop. |
+| **Bulk salary changes** | Confirmed not required. The append-only model makes the write path a loop over the existing command; what is genuinely missing is preview-before-apply and undo, which is its own increment. |
+
+## Scope confirmed with the team (reply of 2026-09-20)
+
+This document was written before building. The team's reply confirmed every assumption in
+`docs/clarifying-questions.md` — nothing above had to be unwound. Two answers widened my latitude,
+and the choice I made with each is the point:
+
+- **Salary history is optional; a current salary would have sufficed.** Kept anyway, because here it
+  is not an extra feature but the absence of a mutable `salary` column. Append-only effective-dated
+  records are what make corrections non-destructive, make `as_of` on analytics free, and make a
+  leaver drop out of payroll cost without a second definition of "active". A single mutable column
+  would have been less code in the model and more code everywhere else.
+- **The analytics set is mine to define.** Narrowed to cost, distribution and comparison across
+  country/department/level. Outlier detection was in my original assumption and has been dropped to
+  the table above, with reasoning.
+
+Also confirmed as out of scope by the team: authentication, bulk changes, and joiner/leaver
+workflow. 10,000 employees is the target scale, so no rollup infrastructure; a deterministic FX
+approach is acceptable, so no live rate API.
 
 ## Key design decisions
 
