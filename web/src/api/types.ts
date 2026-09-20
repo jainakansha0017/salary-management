@@ -41,11 +41,7 @@ export interface EmployeeSummary {
 }
 
 export type CompensationReason =
-  | "hire"
-  | "merit_increase"
-  | "promotion"
-  | "market_adjustment"
-  | "correction";
+  "hire" | "merit_increase" | "promotion" | "market_adjustment" | "correction";
 
 export interface Compensation {
   id: number;
@@ -123,6 +119,22 @@ export interface BreakdownGroup {
 export interface PayrollBreakdown {
   dimension: BreakdownDimension;
   groups: BreakdownGroup[];
+}
+
+export interface DepartmentOption {
+  id: number;
+  name: string;
+}
+
+/**
+ * What the directory can be filtered by. Served by the API rather than held as
+ * a constant here, because department ids are assigned by the database and
+ * differ between machines.
+ */
+export interface DirectoryFacets {
+  countries: string[];
+  departments: DepartmentOption[];
+  job_levels: string[];
 }
 
 /** Every failure the API reports uses this one shape. */

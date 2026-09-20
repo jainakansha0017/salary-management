@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { apiUrl, getJson } from "../api/client";
-import type { EmployeeSummary, Paginated } from "../api/types";
+import type { DirectoryFacets, EmployeeSummary, Paginated } from "../api/types";
 
 /**
  * Exactly the parameters the Rails `EmployeeDirectoryQuery` understands. Kept
@@ -25,12 +25,25 @@ const DIRECTORY_PATH = "/api/v1/employees";
 export function useDirectory(params: DirectoryParams) {
   return useQuery({
     queryKey: ["employees", params],
-    queryFn: ({ signal }) =>
-      getJson<Paginated<EmployeeSummary>>(DIRECTORY_PATH, params, signal),
+    queryFn: ({ signal }) => getJson<Paginated<EmployeeSummary>>(DIRECTORY_PATH, params, signal),
     // Without this the table unmounts to a spinner on every keystroke, and the
     // page jumps as the layout collapses and reopens. Holding the previous
     // result keeps the rows in place while the next ones are on their way.
     placeholderData: keepPreviousData,
+  });
+}
+
+/**
+ * The filter panel's options. Countries, departments and levels change when the
+ * organisation does, not while someone is looking at a page, so this is cached
+ * for the session rather than refetched alongside every directory request.
+ */
+export function useDirectoryFacets() {
+  return useQuery({
+    queryKey: ["filters"],
+    queryFn: ({ signal }) =>
+      getJson<{ data: DirectoryFacets }>("/api/v1/filters", {}, signal).then((body) => body.data),
+    staleTime: Infinity,
   });
 }
 

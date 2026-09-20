@@ -113,6 +113,7 @@ a {
 .page__header {
   display: flex;
   align-items: baseline;
+  justify-content: space-between;
   gap: 12px;
   margin-bottom: var(--gap);
 }
@@ -125,6 +126,81 @@ a {
 .page__subtitle {
   margin: 0;
   color: var(--ink-soft);
+}
+
+/* Filters ----------------------------------------------------------------- */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: var(--gap);
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+/* The search box takes the space left over: it is the control that gets used
+   most, and a name is longer than a country code. */
+.filters__search {
+  flex: 1 1 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filters__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filters__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* How many values are selected, beside the label, because a multi-select
+   scrolled past its own selection otherwise hides that it is filtering. */
+.filters__count {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.filters__clear {
+  align-self: flex-end;
+  padding: 7px 4px;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.input {
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.input--multi {
+  min-width: 140px;
+  padding: 2px;
 }
 
 /* Table ------------------------------------------------------------------- */
@@ -188,6 +264,66 @@ a {
   display: block;
   color: var(--ink-faint);
   font-size: 12px;
+}
+
+/* A button so it is reachable by keyboard and announced as pressable, styled
+   to look like the header text it replaces. */
+.table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.table__sort:hover {
+  color: var(--accent);
+}
+
+.table__sort-marker {
+  color: var(--accent);
+}
+
+/* Pagination -------------------------------------------------------------- */
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  color: var(--ink-soft);
+}
+
+.pagination__range {
+  margin: 0;
+}
+
+.pagination__controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.button:disabled {
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+.button:disabled:hover {
+  border-color: var(--line);
+}
+
+.button--secondary {
+  text-decoration: none;
+  color: var(--accent);
 }
 
 /* States ------------------------------------------------------------------ */
