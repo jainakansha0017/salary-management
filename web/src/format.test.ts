@@ -6,6 +6,7 @@ import {
   formatMoneyCompact,
   formatMoneyOrDash,
   formatReason,
+  toMinorUnits,
 } from "./format";
 import type { Money } from "./api/types";
 
@@ -86,5 +87,47 @@ describe("formatReason", () => {
   // rather than appear blank.
   it("handles a reason it has never seen", () => {
     expect(formatReason("cost_of_living_adjustment")).toBe("Cost of living adjustment");
+  });
+});
+
+describe("toMinorUnits", () => {
+  it("shifts the decimal point rather than multiplying", () => {
+    expect(toMinorUnits("95000.50", 2)).toBe(9_500_050);
+    expect(toMinorUnits("95000", 2)).toBe(9_500_000);
+    expect(toMinorUnits("95000.5", 2)).toBe(9_500_050);
+  });
+
+  // `95000.55 * 100` is 9500054.999999999 in IEEE-754, so a multiply-and-round
+  // implementation of this loses a penny on exactly the kind of figure a salary
+  // is. Three values that all round the wrong way.
+  it("is exact where floating-point multiplication is not", () => {
+    expect(toMinorUnits("95000.55", 2)).toBe(9_500_055);
+    expect(toMinorUnits("1.15", 2)).toBe(115);
+    expect(toMinorUnits("80.29", 2)).toBe(8029);
+  });
+
+  it("honours the currency's own exponent", () => {
+    expect(toMinorUnits("15000000", 0)).toBe(15_000_000);
+    expect(toMinorUnits("125.500", 3)).toBe(125_500);
+  });
+
+  // Not truncated to ¥15,000: a figure typed with decimals the currency does
+  // not have is a mistake, and quietly dropping it changes someone's pay.
+  it("refuses more precision than the currency has", () => {
+    expect(toMinorUnits("15000.75", 0)).toBeNull();
+    expect(toMinorUnits("100.999", 2)).toBeNull();
+  });
+
+  it("accepts a figure pasted out of a spreadsheet", () => {
+    expect(toMinorUnits(" 1,250,000.00 ", 2)).toBe(125_000_000);
+  });
+
+  it("rejects anything that is not a positive amount", () => {
+    expect(toMinorUnits("", 2)).toBeNull();
+    expect(toMinorUnits("0", 2)).toBeNull();
+    expect(toMinorUnits("-500", 2)).toBeNull();
+    expect(toMinorUnits("1e5", 2)).toBeNull();
+    expect(toMinorUnits("ninety thousand", 2)).toBeNull();
+    expect(toMinorUnits("95_000", 2)).toBeNull();
   });
 });

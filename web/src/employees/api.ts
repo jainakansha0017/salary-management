@@ -1,6 +1,13 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { apiUrl, getJson } from "../api/client";
-import type { DirectoryFacets, EmployeeSummary, Paginated } from "../api/types";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiUrl, getJson, postJson } from "../api/client";
+import type {
+  Compensation,
+  CompensationReason,
+  DirectoryFacets,
+  EmployeeDetail,
+  EmployeeSummary,
+  Paginated,
+} from "../api/types";
 
 /**
  * Exactly the parameters the Rails `EmployeeDirectoryQuery` understands. Kept
@@ -44,6 +51,48 @@ export function useDirectoryFacets() {
     queryFn: ({ signal }) =>
       getJson<{ data: DirectoryFacets }>("/api/v1/filters", {}, signal).then((body) => body.data),
     staleTime: Infinity,
+  });
+}
+
+export function useEmployee(id: string) {
+  return useQuery({
+    queryKey: ["employee", id],
+    queryFn: ({ signal }) =>
+      getJson<{ data: EmployeeDetail }>(`${DIRECTORY_PATH}/${id}`, {}, signal).then(
+        (body) => body.data,
+      ),
+  });
+}
+
+/** Exactly what `SalaryChangeForm` permits on the Rails side. */
+export interface SalaryChangeInput {
+  amount_minor: number;
+  currency_code: string;
+  effective_from: string;
+  reason: CompensationReason;
+  note?: string;
+}
+
+/**
+ * Recording a change invalidates rather than writes to the cache.
+ *
+ * The response is the new period alone, but the write also closed the previous
+ * one and may have moved the figure the directory shows — so the server's
+ * version of both is refetched instead of this client reconstructing what it
+ * thinks happened.
+ */
+export function useRecordSalaryChange(id: string) {
+  const client = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: SalaryChangeInput) =>
+      postJson<{ data: Compensation }>(`${DIRECTORY_PATH}/${id}/salary_changes`, {
+        salary_change: input,
+      }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["employee", id] });
+      void client.invalidateQueries({ queryKey: ["employees"] });
+    },
   });
 }
 

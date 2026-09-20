@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { directoryExportUrl, useDirectory } from "../employees/api";
 import type { DirectoryParams } from "../employees/api";
 import { FilterPanel } from "../employees/FilterPanel";
@@ -117,7 +118,12 @@ function EmployeeTable({
           {employees.map((employee) => (
             <tr key={employee.id}>
               <td>
-                <span className="cell__primary">{employee.full_name}</span>
+                {/* The name is the link rather than the whole row: a row-wide
+                    click target cannot be tabbed to, cannot be opened in a new
+                    tab, and swallows text selection. */}
+                <Link className="cell__primary cell__link" to={`/employees/${employee.id}`}>
+                  {employee.full_name}
+                </Link>
                 <span className="cell__secondary">
                   {employee.employee_number} · {employee.job_title}
                 </span>

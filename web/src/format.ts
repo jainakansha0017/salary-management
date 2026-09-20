@@ -73,6 +73,33 @@ function toMajorUnits(money: Money): number {
   return money.amount_minor / 10 ** money.minor_unit;
 }
 
+/**
+ * The inverse, for the one place a person types money in: the salary form.
+ *
+ * Done on the string rather than with `Number(input) * 100`, because that
+ * multiplication is not exact — `95000.55 * 100` is `9500054.999999999` in
+ * IEEE-754, and rounding it back is a coin flip on the last penny of somebody's
+ * salary. Shifting the decimal point by moving characters has no such failure.
+ *
+ * Returns null rather than a best guess for anything that is not a plain
+ * positive amount, including more decimal places than the currency has — a JPY
+ * salary of "15000.75" is a typo, not a value to silently truncate.
+ */
+export function toMinorUnits(input: string, minorUnit: number): number | null {
+  // Thousands separators are what someone copying a figure out of a spreadsheet
+  // will paste; spaces likewise. Neither changes the value.
+  const cleaned = input.trim().replace(/[\s,]/g, "");
+  const match = /^(\d+)(?:\.(\d*))?$/.exec(cleaned);
+  if (!match) return null;
+
+  const whole = match[1] ?? "";
+  const fraction = match[2] ?? "";
+  if (fraction.length > minorUnit) return null;
+
+  const minor = Number(whole + fraction.padEnd(minorUnit, "0"));
+  return minor > 0 ? minor : null;
+}
+
 // `Intl.NumberFormat` is not cheap to construct and a table builds one per
 // cell, so the formatters are made once per shape and reused.
 const formatters = new Map<string, Intl.NumberFormat>();

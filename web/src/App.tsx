@@ -1,5 +1,6 @@
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { DirectoryPage } from "./pages/DirectoryPage";
+import { EmployeePage } from "./pages/EmployeePage";
 
 export function App() {
   return (
@@ -19,6 +20,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/employees" replace />} />
           <Route path="/employees" element={<DirectoryPage />} />
+          <Route path="/employees/:id" element={<EmployeePage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

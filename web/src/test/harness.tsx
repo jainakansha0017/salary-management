@@ -35,12 +35,21 @@ export function renderWithProviders(ui: ReactElement, { route = "/" }: { route?:
  * the mistakes actually are. It records the URLs so a test can assert what was
  * asked for.
  */
+export interface RecordedRequest {
+  url: string;
+  method: string;
+  /** The parsed JSON body, for asserting what a form actually sent. */
+  body: unknown;
+}
+
 export function stubFetch(routes: Record<string, { status?: number; body: unknown }>) {
   const calls: string[] = [];
+  const requests: RecordedRequest[] = [];
 
-  const fetchStub = vi.fn(async (input: RequestInfo | URL) => {
+  const fetchStub = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     calls.push(url);
+    requests.push({ url, method: init?.method ?? "GET", body: parse(init?.body) });
 
     const match = Object.keys(routes).find((pattern) => url.includes(pattern));
     const route = match ? routes[match] : undefined;
@@ -58,5 +67,15 @@ export function stubFetch(routes: Record<string, { status?: number; body: unknow
 
   vi.stubGlobal("fetch", fetchStub);
 
-  return { calls };
+  return { calls, requests };
+}
+
+function parse(body: BodyInit | null | undefined): unknown {
+  if (typeof body !== "string") return undefined;
+
+  try {
+    return JSON.parse(body);
+  } catch {
+    return body;
+  }
 }

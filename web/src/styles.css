@@ -366,6 +366,156 @@ a {
   font-size: 18px;
 }
 
+/* Employee detail --------------------------------------------------------- */
+
+.page__back {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.page__back:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.cell__link {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.cell__link:hover {
+  text-decoration: underline;
+}
+
+.card {
+  padding: 16px 20px;
+  margin-bottom: var(--gap);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.card__title {
+  margin: 24px 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 40px;
+  margin: 0;
+}
+
+.facts__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.facts__term {
+  font-size: 12px;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.facts__value {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.facts__headline {
+  font-family: var(--font-numeric);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.facts__aside {
+  font-size: 12px;
+  color: var(--ink-faint);
+  font-family: var(--font-numeric);
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.badge--quiet {
+  background: var(--canvas);
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+}
+
+/* Forms ------------------------------------------------------------------- */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px;
+  margin-bottom: var(--gap);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.form .card__title {
+  margin-top: 0;
+}
+
+.form__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap);
+}
+
+.form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form__wide {
+  min-width: min(480px, 100%);
+}
+
+.form__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.form__error {
+  margin: 0;
+  max-width: 320px;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.form__ok {
+  color: var(--accent);
+  font-size: 13px;
+}
+
 /* Controls ---------------------------------------------------------------- */
 
 .button {
@@ -380,6 +530,17 @@ a {
 
 .button:hover {
   border-color: var(--ink-faint);
+}
+
+.button--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+.button--primary:hover {
+  border-color: var(--accent);
+  filter: brightness(1.08);
 }
 
 /* Focus is never removed, only restyled: a keyboard user needs to see where
