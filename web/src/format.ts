@@ -78,27 +78,31 @@ function toMajorUnits(money: Money): number {
 const formatters = new Map<string, Intl.NumberFormat>();
 
 function currencyFormatter(currency: string, minorUnit: number): Intl.NumberFormat {
-  return cached(`currency:${currency}:${minorUnit}`, () =>
-    new Intl.NumberFormat(LOCALE, {
-      style: "currency",
-      currency,
-      minimumFractionDigits: minorUnit,
-      maximumFractionDigits: minorUnit,
-    }),
+  return cached(
+    `currency:${currency}:${minorUnit}`,
+    () =>
+      new Intl.NumberFormat(LOCALE, {
+        style: "currency",
+        currency,
+        minimumFractionDigits: minorUnit,
+        maximumFractionDigits: minorUnit,
+      }),
   );
 }
 
 function compactFormatter(currency: string): Intl.NumberFormat {
-  return cached(`compact:${currency}`, () =>
-    new Intl.NumberFormat(LOCALE, {
-      style: "currency",
-      currency,
-      notation: "compact",
-      // Both, not just the maximum: `maximumFractionDigits` alone still emits
-      // `$450.0K`, because compact notation defaults the minimum to match.
-      maximumFractionDigits: 1,
-      minimumFractionDigits: 0,
-    }),
+  return cached(
+    `compact:${currency}`,
+    () =>
+      new Intl.NumberFormat(LOCALE, {
+        style: "currency",
+        currency,
+        notation: "compact",
+        // Both, not just the maximum: `maximumFractionDigits` alone still emits
+        // `$450.0K`, because compact notation defaults the minimum to match.
+        maximumFractionDigits: 1,
+        minimumFractionDigits: 0,
+      }),
   );
 }
 
