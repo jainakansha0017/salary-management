@@ -14,6 +14,12 @@ Rails.application.routes.draw do
         resources :salary_changes, only: [ :create ]
       end
 
+      # Singular: there is one set of filter options, not a collection of them.
+      # Department ids are assigned by the database, so the client has to be
+      # told what they are rather than holding a constant that is right on one
+      # machine and wrong everywhere else.
+      resource :filters, only: [ :show ]
+
       # Not a REST resource — these are questions, not things. Named after what
       # they answer rather than forced into a `resources` block.
       get "analytics/summary", to: "analytics#summary"
