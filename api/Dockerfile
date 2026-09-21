@@ -43,9 +43,21 @@ RUN bundle exec bootsnap precompile app/ lib/
 # Final stage for app image
 FROM base
 
-# Install packages needed for deployment
+# Install packages needed for deployment.
+#
+# postgresql-client is not optional here. `schema_format = :sql`, and Rails
+# loads a structure.sql by shelling out to `psql` — without it the first boot
+# cannot create the schema at all.
+#
+# curl was in the generated Dockerfile to serve a HEALTHCHECK directive this
+# image does not have; nothing in the app or the entrypoint calls it, and the
+# platform checks /up over the network. It is dropped rather than pinned,
+# because ruby:3.1.0-slim is a bullseye image old enough that its package index
+# points at curl builds security.debian.org has since superseded — apt resolves
+# 7.74.0-1.3+deb11u16 and the pool answers 404. An unused package is not worth
+# a workaround.
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl postgresql-client && \
+    apt-get install --no-install-recommends -y postgresql-client && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Copy built artifacts: gems, application
