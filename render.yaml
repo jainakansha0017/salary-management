@@ -29,12 +29,17 @@ services:
     dockerfilePath: ./api/Dockerfile
     dockerContext: ./api
 
-    # The free plan has no shell, so there is no "ssh in and seed it" step
-    # available. This runs after the build and before the server starts, and on
-    # a database Render has just created it loads structure.sql and then seeds
-    # the 10,000-employee organisation — about 13 seconds here, longer on a
-    # 0.1-CPU instance. On every later deploy it is just pending migrations.
-    preDeployCommand: ./bin/rails db:prepare
+    # There is deliberately no `preDeployCommand` here: Render rejects one on a
+    # free instance, and the free plan also has no shell, so there is nowhere to
+    # run `db:seed` from by hand either.
+    #
+    # api/bin/docker-entrypoint covers it. It runs `db:prepare` whenever the
+    # container is starting the server, which on a database Render has just
+    # created loads structure.sql and then seeds the 10,000-employee
+    # organisation — about 13 seconds on a developer machine, longer on 0.1 CPU.
+    # It happens before the port is bound, so the first deploy sits in "port
+    # scan" for a few minutes; that is the seed, not a hang. Every later start,
+    # including each wake from spin-down, is a migration check and nothing more.
 
     # Answers 200 once the app boots with no exceptions. `config.force_ssl`
     # turns this into a 301 over plain HTTP, which Render accepts: 2xx and 3xx

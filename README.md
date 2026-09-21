@@ -84,8 +84,10 @@ the repo. Two things to check on the first deploy:
 
 1. If the name `salary-management-api` was already taken, Render appends a suffix to the URL. The
    proxy destination in `render.yaml` has to be corrected to match, or every API call 404s.
-2. The database is seeded by `preDeployCommand`, because the free plan has no shell to run
-   `db:seed` from. Watch that step finish before the first request.
+2. The first deploy will sit in "port scan" for a few minutes. That is `api/bin/docker-entrypoint`
+   running `db:prepare` — loading the schema and seeding 10,000 employees before Puma binds the
+   port. The free plan has no shell and rejects a pre-deploy command, so it is the only place the
+   seed can happen. Later starts are a migration check and nothing more.
 
 Free-tier caveats, stated plainly because a reviewer will hit them: the API **spins down after 15
 minutes idle** and takes about a minute to wake, so the first page load after a quiet spell is slow
