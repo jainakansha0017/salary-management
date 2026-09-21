@@ -82,12 +82,14 @@ services:
       # proxy has to come before the catch-all or every request would be
       # answered with index.html.
       #
-      # ⚠ The host below must match what Render actually gave the API service.
-      # If `salary-management-api` was already taken, the URL gets a random
-      # suffix and this has to be corrected — check it after the first deploy.
+      # The suffix is not decoration. `salary-management-api.onrender.com` was
+      # already taken — by an Express app belonging to someone else, which
+      # answered every proxied request with its own 404 — so Render named this
+      # service with four random characters appended. The host has to be the one
+      # the dashboard shows, not the one the `name:` field above implies.
       - type: rewrite
         source: /api/*
-        destination: https://salary-management-api.onrender.com/api/*
+        destination: https://salary-management-api-jpre.onrender.com/api/*
 
       # Client-side routing. /employees/42 is a React Router path, not a file,
       # and without this a refresh on that URL is a 404 from the CDN. Render
