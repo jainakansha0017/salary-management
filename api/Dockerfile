@@ -7,11 +7,17 @@ FROM registry.docker.com/library/ruby:$RUBY_VERSION-slim as base
 # Rails app lives here
 WORKDIR /rails
 
-# Set production environment
+# Set production environment.
+#
+# `development:test`, not the generated `development`. This Gemfile has a real
+# test group, and pg_query in it vendors and compiles libpg_query — minutes of
+# build time and a peak memory spike, to install a gem that only ever runs
+# under RSpec. A gem in both groups, like rspec-rails, is excluded only because
+# both of its groups are.
 ENV RAILS_ENV="production" \
     BUNDLE_DEPLOYMENT="1" \
     BUNDLE_PATH="/usr/local/bundle" \
-    BUNDLE_WITHOUT="development"
+    BUNDLE_WITHOUT="development:test"
 
 
 # Throw-away build stage to reduce size of final image

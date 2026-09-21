@@ -44,9 +44,10 @@ EMPLOYEE_COUNT=200 FORCE=true bin/rails db:seed   # a smaller one, for a quick l
 ```
 
 The seed refuses to run against a database that already holds employees unless you pass `FORCE`,
-because pointing it at real salary data would be unrecoverable. It uses a fixed random generator, so
-it produces the same organisation every time — the figures quoted in the docs can be re-checked
-rather than taken on trust.
+because pointing it at real salary data would be unrecoverable. Its random generator is fixed, so the
+same people, departments and pay decisions come out every time; the histories run up to the day you
+seed, so row counts and totals drift by a little with the date. Roughly 10,000 employees and 40,000
+compensation periods in 25 MB, seeded in about 13 seconds.
 
 Port 3001 rather than 3000 only because 3000 is the port every Rails app wants; use 3000 if it is free
 and drop `API_PROXY_TARGET` below.
@@ -70,6 +71,26 @@ same relative paths the production build does — one code path rather than a br
 cd api && bundle exec rspec && bundle exec rubocop    # 191 examples
 cd web && npm test && npm run typecheck               # 77 tests
 ```
+
+## Deployment
+
+[`render.yaml`](render.yaml) describes the whole deployment — a Postgres database, the Rails API from
+`api/Dockerfile`, and the React app as a static site. The static site proxies `/api/*` through to the
+API, so the deployed app is same-origin exactly like the development one: the client sends the same
+relative paths, and CORS is never involved.
+
+To deploy: push the repository to GitHub, then in Render choose **New → Blueprint** and point it at
+the repo. Two things to check on the first deploy:
+
+1. If the name `salary-management-api` was already taken, Render appends a suffix to the URL. The
+   proxy destination in `render.yaml` has to be corrected to match, or every API call 404s.
+2. The database is seeded by `preDeployCommand`, because the free plan has no shell to run
+   `db:seed` from. Watch that step finish before the first request.
+
+Free-tier caveats, stated plainly because a reviewer will hit them: the API **spins down after 15
+minutes idle** and takes about a minute to wake, so the first page load after a quiet spell is slow
+and every one after it is not. Free Postgres **expires 30 days after creation**, so a link that
+worked in September will not in November.
 
 ## The API
 
