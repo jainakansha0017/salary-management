@@ -34,9 +34,16 @@ ENV RAILS_ENV="production" \
 # Throw-away build stage to reduce size of final image
 FROM base as build
 
-# Install packages needed to build gems
+# Install packages needed to build gems.
+#
+# libyaml-dev is the one that is not obvious. Rails pulls in railties → irb →
+# rdoc, and rdoc 7 wants a newer psych than the one Ruby 3.1 ships as a default
+# gem, so bundler builds psych 5 from source and its extconf needs libyaml
+# headers. The slim image keeps libyaml-0-2, because Ruby's own psych links
+# against it, but not the -dev package — so this fails at `bundle install` on a
+# gem nothing in the app ever calls.
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential git libpq-dev pkg-config
+    apt-get install --no-install-recommends -y build-essential git libpq-dev libyaml-dev pkg-config
 
 # Install application gems
 COPY Gemfile Gemfile.lock ./
