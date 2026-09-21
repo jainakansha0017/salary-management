@@ -1,7 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import type { DirectoryParams } from "./api";
 import { useDirectoryFacets } from "./api";
-import type { DirectoryFacets } from "../api/types";
+
+/**
+ * The three filters that mean the same thing wherever they appear. The
+ * directory adds a status to them and analytics adds a date, but a country is a
+ * country — so the control is shared rather than written twice and allowed to
+ * drift.
+ */
+export interface FacetParams {
+  country_code?: string[];
+  department_id?: number[];
+  job_level?: string[];
+}
 
 interface Props {
   params: DirectoryParams;
@@ -10,18 +21,13 @@ interface Props {
 }
 
 export function FilterPanel({ params, onChange, onClear }: Props) {
-  const facets = useDirectoryFacets();
-
   return (
     <div className="filters">
       <SearchField value={params.q ?? ""} onChange={(q) => onChange({ q })} />
 
       <StatusField value={params.status ?? "active"} onChange={(status) => onChange({ status })} />
 
-      {/* The panel does not block on its options. The search box and the table
-          are usable while they load, and a failed lookup costs the facets, not
-          the page. */}
-      {facets.data && <Facets facets={facets.data} params={params} onChange={onChange} />}
+      <Facets params={params} onChange={onChange} />
 
       {hasFilters(params) && (
         <button type="button" className="filters__clear" onClick={onClear}>
@@ -40,7 +46,19 @@ export function FilterPanel({ params, onChange, onClear }: Props) {
  * field lag behind the keyboard, because the round trip through the router is
  * not instant.
  */
-function SearchField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+export function SearchField({
+  value,
+  onChange,
+  label = "Search",
+  id = "directory-search",
+  placeholder = "Name, email or employee number",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  label?: string;
+  id?: string;
+  placeholder?: string;
+}) {
   const [typed, setTyped] = useState(value);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -58,14 +76,14 @@ function SearchField({ value, onChange }: { value: string; onChange: (value: str
 
   return (
     <div className="filters__search">
-      <label className="filters__label" htmlFor="directory-search">
-        Search
+      <label className="filters__label" htmlFor={id}>
+        {label}
       </label>
       <input
-        id="directory-search"
+        id={id}
         className="input"
         type="search"
-        placeholder="Name, email or employee number"
+        placeholder={placeholder}
         value={typed}
         onChange={(event) => setTyped(event.target.value)}
         // The server matches on a trigram index, so it is happy with two
@@ -103,26 +121,38 @@ function StatusField({ value, onChange }: { value: string; onChange: (value: str
   );
 }
 
-function Facets({
-  facets,
+/**
+ * Country, department and level, wherever they are needed.
+ *
+ * It fetches its own options and renders nothing until they arrive: a page does
+ * not block on them, remains usable while they load, and a failed lookup costs
+ * the facets rather than the screen.
+ */
+export function Facets({
   params,
   onChange,
+  prefix = "directory",
 }: {
-  facets: DirectoryFacets;
-  params: DirectoryParams;
-  onChange: (patch: Partial<DirectoryParams>) => void;
+  params: FacetParams;
+  onChange: (patch: Partial<FacetParams>) => void;
+  /** Keeps the input ids unique when two of these are on one page. */
+  prefix?: string;
 }) {
+  const query = useDirectoryFacets();
+  const facets = query.data;
+  if (!facets) return null;
+
   return (
     <>
       <MultiSelect
-        id="directory-country"
+        id={`${prefix}-country`}
         label="Country"
         selected={params.country_code ?? []}
         options={facets.countries.map((code) => ({ value: code, label: code }))}
         onChange={(country_code) => onChange({ country_code })}
       />
       <MultiSelect
-        id="directory-department"
+        id={`${prefix}-department`}
         label="Department"
         selected={(params.department_id ?? []).map(String)}
         options={facets.departments.map((d) => ({
@@ -132,7 +162,7 @@ function Facets({
         onChange={(ids) => onChange({ department_id: ids.map(Number) })}
       />
       <MultiSelect
-        id="directory-level"
+        id={`${prefix}-level`}
         label="Level"
         selected={params.job_level ?? []}
         options={facets.job_levels.map((level) => ({

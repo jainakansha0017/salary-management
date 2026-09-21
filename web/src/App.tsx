@@ -1,6 +1,7 @@
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { DirectoryPage } from "./pages/DirectoryPage";
 import { EmployeePage } from "./pages/EmployeePage";
+import { AnalyticsPage } from "./pages/AnalyticsPage";
 
 export function App() {
   return (
@@ -13,6 +14,9 @@ export function App() {
           <NavLink to="/employees" className={navLinkClass}>
             Directory
           </NavLink>
+          <NavLink to="/analytics" className={navLinkClass}>
+            Analytics
+          </NavLink>
         </nav>
       </header>
 
@@ -21,6 +25,7 @@ export function App() {
           <Route path="/" element={<Navigate to="/employees" replace />} />
           <Route path="/employees" element={<DirectoryPage />} />
           <Route path="/employees/:id" element={<EmployeePage />} />
+          <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
