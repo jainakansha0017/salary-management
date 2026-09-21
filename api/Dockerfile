@@ -1,8 +1,19 @@
 # syntax = docker/dockerfile:1
 
-# Make sure RUBY_VERSION matches the Ruby version in .ruby-version and Gemfile
-ARG RUBY_VERSION=3.1.0
-FROM registry.docker.com/library/ruby:$RUBY_VERSION-slim as base
+# The Debian release is named, not left to the default `-slim` tag.
+#
+# `ruby:3.1.0-slim` is a bullseye image, and bullseye left LTS support in
+# August 2026: security.debian.org still publishes an index listing
+# perl 5.32.1-4+deb11u5, libpq-dev 13.23-0+deb11u4 and a dozen others, but the
+# pool no longer holds them, so `apt-get install` resolves a version and gets a
+# 404. Nothing in the package list can be tweaked around that — the base has to
+# move to a release that is still supported.
+#
+# 3.1.7 rather than 3.1.0 because bookworm postdates 3.1.0, so no 3.1.0-bookworm
+# image exists. It is the last patch of the same minor series, which is why the
+# Gemfile asks for `~> 3.1.0` rather than an exact version.
+ARG RUBY_VERSION=3.1.7
+FROM registry.docker.com/library/ruby:$RUBY_VERSION-slim-bookworm as base
 
 # Rails app lives here
 WORKDIR /rails
