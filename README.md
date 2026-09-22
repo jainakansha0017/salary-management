@@ -7,10 +7,15 @@ Pay is **effective-dated and append-only**: a salary change opens a new period r
 the old one, so "what did this person earn in March" and "what did payroll cost last quarter" are the
 same query with a different date. Nothing is overwritten, and there is no month-end snapshot job.
 
+**Live app:** <https://salary-management-web-xlv6.onrender.com> — and a screenshot tour of it in
+[docs/walkthrough.md](docs/walkthrough.md) if you would rather read than click. The free instance
+sleeps after 15 minutes idle, so the first load takes about a minute to wake.
+
 ## Documentation
 
 | Document | Purpose |
 | --- | --- |
+| [Walkthrough](docs/walkthrough.md) | A tour of the running software, in screenshots |
 | [Requirements](docs/requirements.md) | Goal, scope, and what is deliberately excluded |
 | [Clarifying questions](docs/clarifying-questions.md) | What was asked of the team, and the scope choices left to me |
 | [Architecture](docs/architecture.md) | How it is put together, as ADRs with their rejected alternatives |
