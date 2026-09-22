@@ -7,9 +7,14 @@ Pay is **effective-dated and append-only**: a salary change opens a new period r
 the old one, so "what did this person earn in March" and "what did payroll cost last quarter" are the
 same query with a different date. Nothing is overwritten, and there is no month-end snapshot job.
 
-**Live app:** <https://salary-management-web-xlv6.onrender.com> — and a screenshot tour of it in
+**Live app:** <https://salary-management-web-xlv6.onrender.com> — and a tour of it in
 [docs/walkthrough.md](docs/walkthrough.md) if you would rather read than click. The free instance
 sleeps after 15 minutes idle, so the first load takes about a minute to wake.
+
+![Searching, filtering to Japan and sorting by salary](docs/images/directory.gif)
+
+Searching, filtering to one country and sorting by pay — 9,565 employees down to 299, every step
+answered by Postgres rather than by the browser.
 
 ## Documentation
 

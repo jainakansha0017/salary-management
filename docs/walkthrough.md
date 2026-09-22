@@ -1,9 +1,12 @@
 # Walkthrough
 
-A tour of the running software. Every screenshot below was taken from the deployed app on
+A tour of the running software. Every image below was captured from the deployed app on
 22 September 2026 — not a mockup, not local seed data dressed up for the camera.
 
 **Live app:** <https://salary-management-web-xlv6.onrender.com>
+
+Three of the sections open with a short animation of the real interaction; the still images that
+follow are there to be read, since the numbers matter more than the motion.
 
 The free Render instance sleeps after 15 minutes idle, so the first page load may take about a minute
 to wake. Everything after that is quick.
@@ -14,6 +17,11 @@ to wake. Everything after that is quick.
 
 The landing page is the list an HR manager actually works from: roughly ten thousand people, searched,
 filtered, sorted and paginated on the server.
+
+![Searching, filtering to Japan and sorting by salary](images/directory.gif)
+
+Searching a surname, clearing it, narrowing to one country, then sorting by pay — 9,565 people down
+to 299, each step a round trip to Postgres.
 
 ![Employee directory showing 9,565 employees](images/directory.png)
 
@@ -69,6 +77,8 @@ The correctness argument and the performance win turn out to be the same decisio
 The most useful thing to show is not a feature. Here is an attempt to record a change dated
 2025-08-02 — the day the current period began.
 
+![Recording a backdated salary change and being refused](images/salary-change.gif)
+
 ![The form rejecting a backdated change](images/salary-change-rejected.png)
 
 > a salary change must take effect after the current salary began on 2025-08-02
@@ -105,6 +115,8 @@ thousand rows loaded into Ruby and sorted there. The measurements are in
 [docs/performance.md](performance.md).
 
 ## Comparing groups
+
+![Switching the comparison between country, department and level](images/analytics.gif)
 
 ![Payroll broken down by country](images/analytics-by-country.png)
 
@@ -147,10 +159,13 @@ scope you have decided.
 
 ---
 
-## How these screenshots were produced
+## How these images were produced
 
 `docs/images/` was captured by driving headless Chrome over the DevTools protocol against the
-deployed URL, so the numbers are whatever the live database held that morning. Nothing was staged or
-edited. The one interaction with side effects — submitting the salary form — was deliberately given a
-backdated date, which the API rejects before writing anything, so capturing this walkthrough left the
-data untouched.
+deployed URL, so the numbers are whatever the live database held that morning. The animations are
+frame sequences from the same session, assembled with ImageMagick — real interactions at their real
+speed, not a reconstruction. Nothing was staged or edited.
+
+The one interaction with side effects — submitting the salary form — was deliberately given a
+backdated date, which the API rejects before writing anything. Capturing this walkthrough therefore
+demonstrated the constraint and left the data untouched.
